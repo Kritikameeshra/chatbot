@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mental Health Assistant</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.3/css/bulma.min.css">
+    <style>
+        /* Body style with light grey background */
+        body {
+            background: #f4f4f4; /* Light grey background */
+            font-family: 'Arial', sans-serif;
+            color: #333; /* Dark grey text */
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: flex-start;
+            align-items: stretch;
+            padding: 0;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 300px;
+            background-color: #000000; /* Black sidebar */
+            color: #fff;
+            padding: 20px;
+            border-radius: 0 10px 10px 0;
+            height: 100vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            left: 0;
+        }
+
+        .sidebar h2 {
+            color: #ffffff; /* White text for the title */
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .sidebar a {
+            color: #4A90E2; /* Soft blue for links */
+            text-decoration: none;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+
+        .sidebar .chat-item {
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #444; /* Dark grey for chat items */
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        /* Chat Container */
+        .chat-container {
+            background-color: #ffffff; /* White background */
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.1); /* 3D shadow effect */
+            width: 100%; /* Takes up all available width */
+            max-width: 800px; /* Maximum width */
+            height: 80vh; /* Adjusted height to fit the screen */
+            margin-left: 320px; /* Moves the chat container to the right of the sidebar */
+            margin-top: 40px; /* Add space from the top */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }        
+
+        h1.title {
+            color: #2c3e50;
+            text-align: center;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+
+        .chat-messages {
+            max-height: 70vh;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f9f9f9; /* Light grey background */
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); /* Small shadow */
+        }
+
+        /* Message styles */
+        .message {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .message.user {
+            background-color: #ffebee; /* Light rosy pink for user messages */
+            text-align: right;
+            color: #333;
+        }
+
+        .message.bot {
+            background-color: #ffffff; /* White background for bot responses */
+            text-align: left;
+            color: #333;
+        }
+
+        /* Input field */
+        .input {
+            background-color: #ffffff; /* White background */
+            border: 1px solid #ddd; /* Light grey border */
+            border-radius: 8px;
+            color: #333;
+            padding: 10px;
+            width: 85%;
+            margin-bottom: 10px;
+        }
+
+        /* Buttons */
+        .button {
+            font-weight: bold;
+            border-radius: 50px;
+        }
+
+        .button.is-primary {
+            background-color: #4A90E2; /* Soft blue for primary button */
+            color: white;
+        }
+
+        .button.is-danger {
+            background-color: #FF4D4D; /* Soft red for danger button */
+            color: white;
+        }
+
+        .button.is-info {
+            background-color: #FF8A80; /* Light pinkish-red for info button */
+            color: white;
+        }
+
+        .button:focus {
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>Chat History</h2>
+        <div id="chat-history">
+            <!-- Previous chats will be dynamically added here -->
+        </div>
+
+        <div class="control">
+            <button class="button is-info" id="login-btn">Login</button>
+            <button class="button is-danger" id="logout-btn" style="display:none;">Logout</button>
+        </div>
+    </div>
+
+    <!-- Chat Container -->
+    <div class="chat-container">
+        <h1 class="title">MindCareBot- Mental Health Assistant </h1>
+        <div class="chat-messages" id="chat-messages">
+            <!-- Chat messages will be dynamically added here -->
+        </div>
+
+        <form id="chat-form">
+            <div class="field has-addons">
+                <div class="control is-expanded">
+                    <input class="input" type="text" id="query" placeholder="Type your message...">
+                </div>
+                <div class="control">
+                    <button class="button is-primary" type="submit">Send</button>
+                </div>
+                <div class="control">
+                    <button class="button is-danger" type="button" id="clear-chat">Clear Chat</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        let isLoggedIn = false; // Track login state
+        let chatHistory = []; // Store chat history
+        let currentChat = []; // Store current chat session
+
+        // Function to update chat history in the sidebar
+        function updateChatHistory() {
+            const historyContainer = document.getElementById('chat-history');
+            historyContainer.innerHTML = ''; // Clear the previous content
+            chatHistory.forEach((chat, index) => {
+                const chatItem = document.createElement('div');
+                chatItem.classList.add('chat-item');
+                chatItem.innerText = `Chat ${index + 1}`;
+                chatItem.onclick = () => loadChatHistory(index);
+                historyContainer.appendChild(chatItem);
+            });
+        }
+
+        // Function to load a specific chat from the history
+        function loadChatHistory(index) {
+            const chatMessages = document.getElementById('chat-messages');
+            chatMessages.innerHTML = ''; // Clear the current messages
+            currentChat = chatHistory[index];
+            currentChat.forEach(message => {
+                const msgElement = document.createElement('div');
+                msgElement.classList.add('message', message.sender);
+                msgElement.innerHTML = `<strong>${message.sender}:</strong> ${message.message}`;
+                chatMessages.appendChild(msgElement);
+            });
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Function to handle login
+        document.getElementById('login-btn').addEventListener('click', function () {
+            isLoggedIn = true;
+            document.getElementById('login-btn').style.display = 'none';
+            document.getElementById('logout-btn').style.display = 'inline-block';
+        });
+
+        // Function to handle logout
+        document.getElementById('logout-btn').addEventListener('click', function () {
+            isLoggedIn = false;
+            document.getElementById('login-btn').style.display = 'inline-block';
+            document.getElementById('logout-btn').style.display = 'none';
+        });
+
+        // Send user message and get bot response
+        document.getElementById('chat-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+            
+            const queryInput = document.getElementById('query');
+            const query = queryInput.value;
+            queryInput.value = '';
+
+            // Append user message to chat
+            const chatMessages = document.getElementById('chat-messages');
+            const userMessage = { sender: 'user', message: query };
+            currentChat.push(userMessage); // Store the message in current chat
+            const userMessageElement = document.createElement('div');
+            userMessageElement.classList.add('message', 'user');
+            userMessageElement.innerHTML = `<strong>You:</strong> ${query}`;
+            chatMessages.appendChild(userMessageElement);
+
+            // Send query to server
+            fetch('/submit', {
+                method: 'POST',
+                body: new URLSearchParams({ query }),
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Append bot response to chat
+                const botMessage = { sender: 'bot', message: data.response };
+                currentChat.push(botMessage); // Store the bot response in current chat
+                const botMessageElement = document.createElement('div');
+                botMessageElement.classList.add('message', 'bot');
+                botMessageElement.innerHTML = `<strong>MindCareBot:</strong> ${data.response}`;
+                chatMessages.appendChild(botMessageElement);
+
+                // Scroll to the bottom of the chat
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            });
+
+            // Store the chat in the history if logged in
+            if (isLoggedIn) {
+                chatHistory.push(currentChat); // Add current chat to chat history
+                updateChatHistory(); // Update sidebar with new chat history
+            }
+        });
+
+        // Clear chat button functionality
+        document.getElementById('clear-chat').addEventListener('click', function () {
+            document.getElementById('chat-messages').innerHTML = '';
+            currentChat = []; // Clear the current chat
+        });
+    </script>
+</body>
+</html>
